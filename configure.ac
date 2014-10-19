@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([gifsicle], [1.82])
+AC_INIT([gifsicle], [1.86])
 AC_CONFIG_SRCDIR([src/gifsicle.h])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE
@@ -166,7 +166,7 @@ elif test "$ac_cv_u_int_t" = yes; then
     AC_DEFINE([HAVE_U_INT_TYPES], [1], [Define if you have u_intXX_t types but not uintXX_t types.])
 fi
 
-AC_CHECK_TYPES([uintptr_t], [], [],
+AC_CHECK_TYPES([uintptr_t, int64_t], [], [],
 [#if HAVE_INTTYPES_H
 # include <inttypes.h>
 #endif
@@ -211,6 +211,16 @@ char *strerror(int errno);
 }
 /* Get rid of a possible inline macro under C++. */
 # define inline inline
+#endif
+
+/* Need _setmode under MS-DOS, to set stdin/stdout to binary mode */
+/* Need _fsetmode under OS/2 for the same reason */
+/* Windows has _isatty and _snprintf, not the normal versions */
+#if defined(_MSDOS) || defined(_WIN32) || defined(__EMX__) || defined(__DJGPP__)
+# include <fcntl.h>
+# include <io.h>
+# define isatty _isatty
+# define snprintf _snprintf
 #endif
 
 #endif /* GIFSICLE_CONFIG_H */])

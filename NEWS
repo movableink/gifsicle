@@ -1,5 +1,33 @@
 Gifsicle NEWS
 
+Version 1.86   14.Oct.2014
+
+* Further fix --rotate + --crop.
+
+
+Version 1.85   14.Oct.2014
+
+* Greatly improve optimization time for images with many colors.
+
+* Add --no-extensions (with the s) and document those options more.
+
+* Fix bug in interaction of --resize and --rotate reported by Michał
+  Ziemba.
+
+
+Version 1.84   29.Jun.2014
+
+* Correct optimizer bug that affected GIFs with 65535 or more total
+  colors. Reported by Jernej Simončič.
+
+
+Version 1.83   21.Apr.2014
+
+* Correct bug in custom gamma values reported by Kornel Lesiński.
+
+* Update Windows build.
+
+
 Version 1.82   27.Mar.2014
 
 * Correct bug in `mix` sampling method reported by Bryan Stillwell.
