@@ -7,7 +7,7 @@
    will, as long as this notice is kept intact and this source code is made
    available. There is no warranty, express or implied. */
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 # include <config.h>
 #elif !defined(__cplusplus)
 /* Assume we don't have inline by default */
@@ -427,11 +427,12 @@ read_logical_screen_descriptor(Gif_Stream *gfs, Gif_Reader *grr)
   gifgetbyte(grr);
 
   if (packed & 0x80) { /* have a global color table */
-    int ncol = 1 << ((packed & 0x07) + 1);
-    gfs->global = read_color_table(ncol, grr);
-    if (!gfs->global) return 0;
-    gfs->global->refcount = 1;
-  }
+      int ncol = 1 << ((packed & 0x07) + 1);
+      gfs->global = read_color_table(ncol, grr);
+      if (!gfs->global) return 0;
+      gfs->global->refcount = 1;
+  } else
+      gfs->background = 256;
 
   return 1;
 }

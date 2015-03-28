@@ -19,6 +19,9 @@
 /* Define to 1 if you have the `mkstemp' function. */
 /* #undef HAVE_MKSTEMP */
 
+/* Define to 1 if you have the `pow' function. */
+#define HAVE_POW 1
+
 /* Define to 1 if you have the <stdint.h> header file. */
 /* #undef HAVE_STDINT_H */
 
@@ -68,7 +71,7 @@
 #define PACKAGE_NAME "gifsicle"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "gifsicle 1.82"
+#define PACKAGE_STRING "gifsicle 1.87"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "gifsicle"
@@ -77,7 +80,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "1.82"
+#define PACKAGE_VERSION "1.87"
 
 /* Pathname separator character ('/' on Unix). */
 #define PATHNAME_SEPARATOR '\\'
@@ -106,7 +109,7 @@
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "1.82 (Windows)"
+#define VERSION "1.87 (Windows)"
 
 /* Define if X is not available. */
 #define X_DISPLAY_MISSING 1
@@ -132,13 +135,9 @@
 extern "C" {
 #endif
 
-/* Use either the clean-failing malloc library in fmalloc.c, or the debugging
-   malloc library in dmalloc.c. */
-#define xmalloc(s)		fail_die_malloc((s),__FILE__,__LINE__)
-#define xrealloc(p,s)		fail_die_realloc((p),(s),__FILE__,__LINE__)
-#define xfree			free
-void *fail_die_malloc(size_t, const char *, int);
-void *fail_die_realloc(void *, size_t, const char *, int);
+/* Use the clean-failing malloc library in fmalloc.c. */
+#define GIF_ALLOCATOR_DEFINED   1
+#define Gif_Free free
 
 /* Prototype strerror if we don't have it. */
 #ifndef HAVE_STRERROR
@@ -149,6 +148,16 @@ char *strerror(int errno);
 }
 /* Get rid of a possible inline macro under C++. */
 # define inline inline
+#endif
+
+/* Need _setmode under MS-DOS, to set stdin/stdout to binary mode */
+/* Need _fsetmode under OS/2 for the same reason */
+/* Windows has _isatty and _snprintf, not the normal versions */
+#if defined(_MSDOS) || defined(_WIN32) || defined(__EMX__) || defined(__DJGPP__)
+# include <fcntl.h>
+# include <io.h>
+# define isatty _isatty
+# define snprintf _snprintf
 #endif
 
 #endif /* GIFSICLE_CONFIG_H */

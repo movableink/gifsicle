@@ -41,7 +41,7 @@ typedef uint16_t Gif_Code;
 struct Gif_Stream {
 
     Gif_Colormap *global;
-    uint8_t background;
+    uint16_t background;        /* 256 means no background */
 
     uint16_t screen_width;
     uint16_t screen_height;
@@ -169,32 +169,20 @@ void		Gif_InitCompressInfo(Gif_CompressInfo *gcinfo);
 /** GIF_COLORMAP **/
 
 typedef struct {
-    uint8_t haspixel;
-    union {
-        struct {
-            uint8_t red;
-            uint8_t green;
-            uint8_t blue;
-        } comp;
-        uint8_t a[3];
-    } c;
-#define gfc_red   c.comp.red
-#define gfc_green c.comp.green
-#define gfc_blue  c.comp.blue
-#define gfc_array c.a
-
-    uint32_t pixel;
+    uint8_t haspixel;      /* semantics assigned by user */
+    uint8_t gfc_red;       /* red component (0-255) */
+    uint8_t gfc_green;     /* green component (0-255) */
+    uint8_t gfc_blue;      /* blue component (0-255) */
+    uint32_t pixel;        /* semantics assigned by user */
 } Gif_Color;
 
 
 struct Gif_Colormap {
-
     int ncol;
     int capacity;
     uint32_t userflags;
     int refcount;
     Gif_Color *col;
-
 };
 
 Gif_Colormap *	Gif_NewColormap(void);

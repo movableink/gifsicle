@@ -7,7 +7,7 @@
    will, as long as this notice is kept intact and this source code is made
    available. There is no warranty, express or implied. */
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 # include <config.h>
 #endif
 #include <lcdfgif/gif.h>
@@ -25,7 +25,7 @@ Gif_NewStream(void)
   if (!gfs)
     return 0;
   gfs->global = 0;
-  gfs->background = 0;
+  gfs->background = 256;
   gfs->screen_width = gfs->screen_height = 0;
   gfs->loopcount = -1;
   gfs->comment = 0;
@@ -821,8 +821,7 @@ void* Gif_Realloc(void* p, size_t s, size_t n, const char* file, int line) {
         Gif_Free(p);
     else if (s == 1 || n == 1 || s <= ((size_t) -1) / n)
         return realloc(p, s * n);
-    else
-        return (void*) 0;
+    return (void*) 0;
 }
 
 #undef Gif_Free
