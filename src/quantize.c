@@ -94,6 +94,10 @@ uint16_t* gamma_tables[2] = {
     (uint16_t*) srgb_revgamma_table_256
 };
 
+#if ENABLE_THREADS
+pthread_mutex_t kd3_sort_lock;
+#endif
+
 
 const char* kc_debug_str(kcolor x) {
     static int whichbuf = 0;
@@ -128,8 +132,8 @@ void kc_set_gamma(int type, double gamma) {
             gamma_tables[1] = Gif_NewArray(uint16_t, 256);
         }
         for (j = 0; j != 256; ++j) {
-            gamma_tables[0][j] = (int) (pow(j/255.0, gamma) * 32767);
-            gamma_tables[1][j] = (int) (pow(j/256.0, 1/gamma) * 32767);
+            gamma_tables[0][j] = (int) (pow(j/255.0, gamma) * 32767 + 0.5);
+            gamma_tables[1][j] = (int) (pow(j/256.0, 1/gamma) * 32767 + 0.5);
             /* The ++gamma_tables[][] ensures that round-trip gamma correction
                always preserve the input colors. Without it, one might have,
                for example, input values 0, 1, and 2 all mapping to
@@ -344,12 +348,6 @@ void kchist_make(kchist* kch, Gif_Stream* gfs, uint32_t* ntransp_store) {
     *ntransp_store = ntransparent;
 }
 
-
-#undef min
-#undef max
-#define min(a, b)       ((a) < (b) ? (a) : (b))
-#define max(a, b)       ((a) > (b) ? (a) : (b))
-
 static int red_kchistitem_compare(const void* va, const void* vb) {
     const kchistitem* a = (const kchistitem*) va;
     const kchistitem* b = (const kchistitem*) vb;
@@ -405,7 +403,8 @@ Gif_Colormap* colormap_median_cut(kchist* kch, Gt_OutputData* od)
   if (adapt_size < 2 || adapt_size > 256)
     fatal_error("adaptive palette size must be between 2 and 256");
   if (adapt_size >= kch->n && !od->colormap_fixed)
-    warning(1, "trivial adaptive palette (only %d colors in source)", kch->n);
+    warning(1, "trivial adaptive palette (only %d %s in source)",
+            kch->n, kch->n == 1 ? "color" : "colors");
   if (adapt_size >= kch->n)
     adapt_size = kch->n;
 
@@ -592,7 +591,7 @@ int kcdiversity_choose(kcdiversity* div, int chosen, int dodither) {
         for (i = 0; i != div->nchosen; ++i) {
             kcolor x = hist[chosen].ka.k, *y = &hist[div->chosen[i]].ka.k;
             /* penalize combinations with large luminance difference */
-            double dL = fabs(kc_luminance(&x) - kc_luminance(y));
+            double dL = abs(kc_luminance(&x) - kc_luminance(y));
             dL = (dL > 8192 ? dL * 4 / 32767. : 1);
             /* create combination */
             for (k = 0; k != 3; ++k)
@@ -926,6 +925,15 @@ void kd3_build(kd3_tree* kd3) {
     perm = Gif_NewArray(int, kd3->nitems);
     for (i = 0; i != kd3->nitems; ++i)
         perm[i] = i;
+#if ENABLE_THREADS
+    /*
+     * Because kd3_sorter is a static global used in some
+     * sorting comparators, put a mutex around this
+     * code block to avoid an utter catastrophe.
+     */
+    pthread_mutex_lock(&kd3_sort_lock);
+#endif
+
     kd3_sorter = kd3;
     qsort(perm, kd3->nitems, sizeof(int), kd3_item_all_compar);
     for (i = 0, delta = 1; i + delta < kd3->nitems; ++i)
@@ -938,6 +946,9 @@ void kd3_build(kd3_tree* kd3) {
     kd3_build_range(perm, kd3->nitems - (delta - 1), 0, 0);
     assert(kd3->maxdepth < 32);
 
+#if ENABLE_THREADS
+    pthread_mutex_unlock(&kd3_sort_lock);
+#endif
     Gif_DeleteArray(perm);
 }
 
@@ -1500,6 +1511,8 @@ try_assign_transparency(Gif_Image *gfi, Gif_Colormap *old_cm, uint8_t *new_data,
 
   if (old_cm)
     transp_value = old_cm->col[transparent];
+  else
+    GIF_SETCOLOR(&transp_value, 0, 0, 0);
 
   /* look for an unused pixel in the existing colormap; prefer the same color
      we had */
@@ -1688,7 +1701,7 @@ colormap_stream(Gif_Stream* gfs, Gif_Colormap* new_cm, Gt_OutputData* od)
       }
 
     /* map the image data, transparencies, and background */
-    if (gfs->global && gfs->background < gfs->global->ncol)
+    if (gfs->background < gfs->global->ncol)
         gfs->background = map[gfs->background];
     for (imagei = 0; imagei < gfs->nimages; imagei++) {
       Gif_Image *gfi = gfs->images[imagei];

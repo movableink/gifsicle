@@ -23,6 +23,11 @@ typedef struct Gt_Frameset Gt_Frameset;
 typedef struct Gt_Crop Gt_Crop;
 typedef struct Gt_ColorTransform Gt_ColorTransform;
 
+#if ENABLE_THREADS
+#include <pthread.h>
+extern pthread_mutex_t kd3_sort_lock;
+#endif
+
 typedef struct Gt_Frame {
 
   Gif_Stream *stream;
@@ -171,6 +176,7 @@ extern const char *program_name;
 extern int verbosing;
 extern int error_count;
 extern int no_warnings;
+extern int thread_count;
 extern Gif_CompressInfo gif_write_info;
 
 void fatal_error(const char* format, ...) NORETURN;
